@@ -1,0 +1,64 @@
+---
+- hosts: director-host				
+  tasks:
+#_____________________________________________________Java Deployment_________________________________________________#
+
+  - name: get jdk RPM file            
+    get_url:
+        url: "http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.rpm"
+        headers: 'Cookie: oraclelicense=accept-securebackup-cookie'
+        dest: "/tmp/jdk-8u131-linux-x64.rpm"
+  
+  - name: Wait until the file /tmp/jdk-8u171-linux-x64.rpm  is present
+    wait_for:
+        path: /tmp/jdk-8u131-linux-x64.rpm 
+  
+  - name: Install package
+    sudo: yes
+    yum:
+          name: '/tmp/jdk-8u131-linux-x64.rpm'
+          state: present
+  
+  - name: Save JAVA_HOME path 
+    lineinfile:
+          dest: /etc/profile.d/java.sh
+          line: "export JAVA_HOME=/usr/java/default"
+          state: present
+          insertafter: EOF
+          create: True
+  
+  - name: Update .bashrc
+    shell: "source /etc/profile.d/java.sh"
+
+#_______________________________________________Cloudera Director Deployment___________________________________________#
+  - name: Add repository
+    yum_repository:
+        sudo: yes
+        name: cloudera-director
+        description: Cloudera Director YUM repo
+        baseurl: "https://archive.cloudera.com/director/redhat/7/x86_64/director/cloudera-director.repo"
+  
+  - name: install the latest version of Apache from the testing repo
+    yum:
+        sudo: yes
+        name: 
+        - 'cloudera-director-server'
+        - 'cloudera-director-client'
+        enablerepo: cloudera-director
+        state: present 
+  
+  - name: Enable service httpd, and not touch the state
+    sudo: yes
+    service:
+        name: cloudera-director-server
+        enabled: yes
+        state: started
+  
+  - name: exporting credentials
+    shell: "cloudera-director bootstrap-remote ./cluster.conf --lp.remote.username=admin --lp.remote.password=admin --lp.remote.hostAndPort=localhost:7189"
+
+
+
+
+auto scaling
+role distribution

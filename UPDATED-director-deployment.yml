@@ -1,0 +1,71 @@
+---
+- hosts: director-host	
+	user:ec2-user
+	become:yes
+	connectin:ssh
+	environment: 
+		http_proxy: IPofPROXY
+		https_proxy: IPofPROXY
+		no_proxy:
+		
+	tasks:
+#_____________________________________________________Java Deployment_________________________________________________#
+
+  - name: get jdk RPM file            
+    get_url:
+        url: "http://archive.cloudera.com/director/redhat/6/x86_64/director/2.5/RPMS/x86_64/oracle-j2sdk1.8-1.8.0+update121-1.x86_64.rpm"
+        dest: "/tmp/jdk.rpm"
+		use_proxy:yes
+  
+  - name: Install package
+    yum:
+		name: '/tmp/jdk.rpm'
+		state: present
+  
+  - name: Save JAVA_HOME path 
+    lineinfile:
+          dest: /etc/profile.d/java.sh
+          line: "export JAVA_HOME=/usr/java/default"
+          state: present
+          insertafter: EOF
+          create: True
+  
+  - name: Update .bashrc
+    shell: "source /etc/profile.d/java.sh"
+
+#_______________________________________________Cloudera Director Deployment___________________________________________#
+  - name: Add repository
+    become: yes
+    get_url:
+		url: "https://archive.cloudera.com/director6/6.3.0/redhat/7/cloudera-director.repo"
+		dest: "/etc/yum.repos.d/"
+		use_proxy: yes
+  
+  - name: Import GPG rpm Key
+    get_url:
+		url: "https://archive.cloudera.com/director6/6.3.0/redhat/7/RPM-GPG-KEY-cloudera"
+		dest: "/etc/pki/rpm-gpg"
+		use_proxy: yes
+  
+  - name: Change GPG permission
+    file:
+		path:/etc/pki/rpm-gpg/RPM-GPG-KEY-cloudera
+		mode:0644
+  
+  - name: Install Cloudera-Director-Server
+    yum:
+        name:cloudera-director-server
+  
+  - name: Install Cloudera-Director-Client
+    yum:
+        name:cloudera-director-client
+  - name: Enable and start Cloudera-Director-Server
+    become:yes
+    service:
+        name:cloudera-director-server
+        enabled:yes
+        state:started
+        
+  - name: exporting credentials
+    shell: "cloudera-director bootstrap-remote ./cluster.conf --lp.remote.username=admin --lp.remote.password=admin --lp.remote.hostAndPort=localhost:7189"
+
