@@ -1,0 +1,11 @@
+sudo yum install wget -y
+wget  -O $HOME/jdk-8u131-linux-x64.rpm --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.rpm"
+
+sudo rpm -ivh ~/jdk-8u131-linux-x64.rpm
+sudo su -c 'cat >>/etc/profile.d/java.sh <<EOL JAVA_HOME=/usr/java/latest'
+source 	/etc/profile.d/java.sh
+
+sudo wget http://archive.cloudera.com/director/redhat/6/x86_64/director/cloudera-director.repo -O /etc/yum.repos.d/cloudera-director.repo
+sudo yum install cloudera-director-server cloudera-director-client -y
+sudo chkconfig cloudera-director-server on
+sudo service cloudera-director-server start

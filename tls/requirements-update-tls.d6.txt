@@ -1,3 +1,0 @@
-# requirements for update-tls.d6.py
-
-cloudera-director-python-client >= 6.0.0
